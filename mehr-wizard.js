@@ -145,7 +145,7 @@ async function deployMasterPanel(token, accountId, panelName) {
 
     return jsonRes(true, "پنل اصلی مهر با موفقیت دیپلوی و آپدیت شد!", {
         type: "master",
-        url: finalUrl.replace(/\/?$/, "/sync/dash"),
+        url: finalUrl,
         name: panelName
     });
 }
