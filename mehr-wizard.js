@@ -223,7 +223,6 @@ function jsonRes(success, message, data = null) {
 }
 
 function getWizardHtml() {
-    return `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -368,9 +367,20 @@ function getWizardHtml() {
         .status { margin-top: 12px; font-size: 13px; text-align: center; }
         .status.error { color: var(--danger); }
         .status.success { color: var(--success); }
-        .version-tag {\n            position: fixed;\n            top: 16px;\n            left: 16px;\n            padding: 4px 12px;\n            font-size: 11px;\n            font-weight: 700;\n            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;\n            color: var(--primary);\n            background: rgba(56, 189, 248, 0.08);\n            border: 1px solid rgba(56, 189, 248, 0.25);\n            border-radius: 9999px;\n            backdrop-filter: blur(8px);\n            z-index: 1000;\n            direction: ltr;\n            user-select: none;\n        }\n        .open-dash-btn {\n            display: inline-block;\n            margin-top: 10px;\n            background: var(--success);\n            color: #031525;\n            font-size: 12px;\n            font-weight: 700;\n            padding: 8px 16px;\n            border-radius: 6px;\n            text-decoration: none;\n        }\n    </style>
+        .open-dash-btn {
+            display: inline-block;
+            margin-top: 10px;
+            background: var(--success);
+            color: #031525;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+    </style>
 </head>
-<body>    <div class="version-tag">v1.0.0</div>
+<body>
     <div class="card">
         <span class="badge">Mehr Deployment Hub</span>
         <h1>ویزارد جامع راه‌اندازی کلاستر مهر</h1>
@@ -423,124 +433,121 @@ function getWizardHtml() {
     </div>
 
     <script>
-        let detectedAccountId = "";
+        let detectedAccountId = '';
 
         function updateTargetUI() {
-            const type = document.getElementById("targetType").value;
-            const nameInput = document.getElementById("workerName");
-            const label = document.getElementById("nameLabel");
-            if (type === "master") {
-                label.innerText = "نام ورکر پنل اصلی";
-                nameInput.value = "mehr";
+            const type = document.getElementById('targetType').value;
+            const nameInput = document.getElementById('workerName');
+            const label = document.getElementById('nameLabel');
+            if (type === 'master') {
+                label.innerText = 'نام ورکر پنل اصلی';
+                nameInput.value = 'mehr';
             } else {
-                label.innerText = "نام ورکر نود فرعی";
-                nameInput.value = "node-edge-2";
+                label.innerText = 'نام ورکر نود فرعی';
+                nameInput.value = 'node-edge-2';
             }
         }
 
         async function detectAccount() {
-            const token = document.getElementById("apiToken").value.trim();
-            const badge = document.getElementById("accountBadge");
+            const token = document.getElementById('apiToken').value.trim();
+            const badge = document.getElementById('accountBadge');
             if (token.length < 30) {
-                badge.style.display = "none";
+                badge.style.display = 'none';
                 return;
             }
 
-            badge.style.display = "block";
-            badge.style.color = "var(--primary)";
-            badge.innerText = "⏳ در حال شناسایی اکانت...";
+            badge.style.display = 'block';
+            badge.style.color = 'var(--primary)';
+            badge.innerText = '⏳ در حال شناسایی اکانت...';
 
             try {
-                const res = await fetch("/api/get-account", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                const res = await fetch('/api/get-account', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ apiToken: token })
                 });
                 const data = await res.json();
                 if (data.success) {
                     detectedAccountId = data.data.accountId;
-                    badge.style.color = "var(--success)";
-                    badge.innerText = "✓ اکانت شناسایی شد: " + data.data.accountName;
+                    badge.style.color = 'var(--success)';
+                    badge.innerText = '✓ اکانت شناسایی شد: ' + data.data.accountName;
                 } else {
-                    badge.style.color = "var(--danger)";
-                    badge.innerText = "✗ خطا: " + data.message;
+                    badge.style.color = 'var(--danger)';
+                    badge.innerText = '✗ خطا: ' + data.message;
                 }
             } catch (err) {
-                badge.style.color = "var(--danger)";
-                badge.innerText = "✗ خطا در ارتباط با کلادفلر";
+                badge.style.color = 'var(--danger)';
+                badge.innerText = '✗ خطا در ارتباط با کلادفلر';
             }
         }
 
         async function startDeploy() {
-            const apiToken = document.getElementById("apiToken").value.trim();
-            const targetType = document.getElementById("targetType").value;
-            const workerName = document.getElementById("workerName").value.trim();
-            const btn = document.getElementById("deployBtn");
-            const status = document.getElementById("statusMsg");
-            const resultBox = document.getElementById("resultBox");
+            const apiToken = document.getElementById('apiToken').value.trim();
+            const targetType = document.getElementById('targetType').value;
+            const workerName = document.getElementById('workerName').value.trim();
+            const btn = document.getElementById('deployBtn');
+            const status = document.getElementById('statusMsg');
+            const resultBox = document.getElementById('resultBox');
 
-            if (!apiToken || !workerName) {
-                status.className = "status error";
-                status.innerText = "لطفاً توکن و نام ورکر را وارد کنید.";
+                status.className = 'status error';
+                status.innerText = 'لطفاً توکن و نام ورکر را وارد کنید.';
                 return;
             }
 
-            if (!detectedAccountId) {
                 await detectAccount();
-                if (!detectedAccountId) {
-                    status.className = "status error";
-                    status.innerText = "شناسایی اکانت ناموفق بود. توکن را بررسی کنید.";
+                    status.className = 'status error';
+                    status.innerText = 'شناسایی اکانت ناموفق بود. توکن را بررسی کنید.';
                     return;
                 }
             }
 
             btn.disabled = true;
-            btn.innerText = "⏳ در حال ساخت و دیپلوی روی کلادفلر...";
-            status.className = "status";
-            status.innerText = "";
-            resultBox.style.display = "none";
+            btn.innerText = '⏳ در حال ساخت و دیپلوی روی کلادفلر...';
+            status.className = 'status';
+            status.innerText = '';
+            resultBox.style.display = 'none';
 
             try {
-                const res = await fetch("/api/deploy", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                const res = await fetch('/api/deploy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ apiToken, accountId: detectedAccountId, targetType, workerName })
                 });
                 const data = await res.json();
 
                 if (data.success) {
-                    status.className = "status success";
-                    status.innerText = "استقرار با موفقیت انجام شد!";
-                    document.getElementById("resUrl").innerText = data.data.url;
+                    status.className = 'status success';
+                    status.innerText = 'استقرار با موفقیت انجام شد!';
+                    document.getElementById('resUrl').innerText = data.data.url;
                     
-                    const keyBox = document.getElementById("keyBox");
-                    const resultDesc = document.getElementById("resultDesc");
-                    if (data.data.type === "edge") {
-                        keyBox.style.display = "block";
-                        document.getElementById("resKey").innerText = data.data.apiKey;
-                        resultDesc.innerText = "✅ نود فرعی آماده شد. آن را در پنل اصلی ثبت کنید.";
+                    const keyBox = document.getElementById('keyBox');
+                    const resultDesc = document.getElementById('resultDesc');
+                    if (data.data.type === 'edge') {
+                        keyBox.style.display = 'block';
+                        document.getElementById('resKey').innerText = data.data.apiKey;
+                        resultDesc.innerText = '✅ نود فرعی آماده شد. آن را در پنل اصلی ثبت کنید.';
                     } else {
-                        keyBox.style.display = "none";
-                        resultDesc.innerHTML = "\u2705 \u067e\u0646\u0644 \u0627\u0635\u0644\u06cc \u0628\u0627 \u0645\u0648\u0641\u0642\u06cc\u062a \u0645\u0633\u062a\u0642\u0631 \u0634\u062f.<br><a href=\"" + data.data.url + "\" target=\"_blank\" class=\"open-dash-btn\">\ud83d\ude80 \u0648\u0631\u0648\u062f \u0628\u0647 \u062f\u0627\u0634\u0628\u0648\u0631\u062f \u067e\u0646\u0644 \u0645\u0647\u0631</a>";
+                        keyBox.style.display = 'none';
+                        resultDesc.innerHTML = '✅ پنل اصلی مستقر شد.<br><a href="' + data.data.url + '" target="_blank" class="open-dash-btn">🚀 ورود به داشبورد پنل مهر</a>';
                     }
-                    resultBox.style.display = "block";
+                    resultBox.style.display = 'block';
                 } else {
-                    status.className = "status error";
-                    status.innerText = "خطا: " + data.message;
+                    status.className = 'status error';
+                    status.innerText = 'خطا: ' + data.message;
                 }
             } catch (err) {
-                status.className = "status error";
-                status.innerText = "خطا: " + err.message;
+                status.className = 'status error';
+                status.innerText = 'خطا: ' + err.message;
             } finally {
                 btn.disabled = false;
-                btn.innerText = "⚡ شروع استقرار خودکار";
+                btn.innerText = '⚡ شروع استقرار خودکار';
             }
         }
 
         function copyText(elementId) {
             const text = document.getElementById(elementId).innerText;
             navigator.clipboard.writeText(text).then(() => {
-                alert("کپی شد!");
+                alert('کپی شد!');
             });
         }
     </script>
