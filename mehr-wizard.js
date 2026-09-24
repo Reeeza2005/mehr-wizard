@@ -131,10 +131,8 @@ async function deployMasterPanel(token, accountId, panelName) {
     const masterHtmlSource = await dashRes.text();
 
     // dashboard.html کی امپورٹ کو براہ راست متغیر میں بدلنا تاکہ ماڈیول کا مسئلہ حل ہو جائے
-    masterWorkerSource = masterWorkerSource.replace(
-        /import\s+HTML_CONTENT\s+from\s+["'\].\/dashboard(\.html|\.js)?["'\\\];?/,
-        "const HTML_CONTENT = " + JSON.stringify(masterHtmlSource) + ";"
-    );
+    // Inline dashboard.html into _worker.js safely
+    masterWorkerSource = masterWorkerSource.split('\n').map(l => l.includes('from "./dashboard.html"') || l.includes("from './dashboard.html'") ? 'const HTML_CONTENT = ' + JSON.stringify(masterHtmlSource) + ';' : l).join('\n');
 
     const form = new FormData();
     const metadata = {
