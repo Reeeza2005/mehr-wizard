@@ -426,7 +426,7 @@ function getWizardHtml() {
         }
     </style>
 </head>
-<body>\n    <div class="version-tag">v1.0.0</div>
+<body>    <div class="version-tag">v1.0.0</div>
     <div class="card">
         <span class="badge">Mehr Deployment Hub</span>
         <h1>ویزارد جامع راه‌اندازی کلاستر مهر</h1>
