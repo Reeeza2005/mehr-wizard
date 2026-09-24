@@ -130,6 +130,12 @@ async function deployMasterPanel(token, accountId, panelName) {
     let masterWorkerSource = await workerRes.text();
     const masterHtmlSource = await dashRes.text();
 
+    // dashboard.html کی امپورٹ کو براہ راست متغیر میں بدلنا تاکہ ماڈیول کا مسئلہ حل ہو جائے
+    masterWorkerSource = masterWorkerSource.replace(
+        /import\s+HTML_CONTENT\s+from\s+["'\].\/dashboard(\.html|\.js)?["'\\\];?/,
+        "const HTML_CONTENT = " + JSON.stringify(masterHtmlSource) + ";"
+    );
+
     const form = new FormData();
     const metadata = {
         main_module: "_worker.js",
@@ -142,7 +148,6 @@ async function deployMasterPanel(token, accountId, panelName) {
 
     form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
     form.append("_worker.js", new Blob([masterWorkerSource], { type: "application/javascript+module" }), "_worker.js");
-    form.append("dashboard.html", new Blob([masterHtmlSource], { type: "text/html" }), "dashboard.html");
 
     const deployRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${panelName}`, {
         method: "PUT",
