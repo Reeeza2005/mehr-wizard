@@ -127,7 +127,7 @@ async function deployMasterPanel(token, accountId, panelName) {
 
     form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
     form.append("_worker.js", new Blob([masterWorkerSource], { type: "application/javascript+module" }), "_worker.js");
-    form.append("dashboard.html", new Blob([masterHtmlSource], { type: "text/plain" }), "dashboard.html");
+    form.append("dashboard.js", new Blob(["export default " + JSON.stringify(masterHtmlSource) + ";"], { type: "application/javascript+module" }), "dashboard.js");
 
     const deployRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${panelName}`, {
         method: "PUT",
