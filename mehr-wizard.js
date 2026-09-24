@@ -99,7 +99,7 @@ async function deployEdgeNode(token, accountId, nodeName) {
 
     return jsonRes(true, "نود فرعی با موفقیت دیپلوی شد.", {
         type: "edge",
-        url: finalUrl.replace(/\/?$/, "/sync/dash"),
+        url: finalUrl,
         apiKey: nodeApiKey,
         name: nodeName
     });
