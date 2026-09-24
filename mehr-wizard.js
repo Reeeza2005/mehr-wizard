@@ -223,6 +223,7 @@ function jsonRes(success, message, data = null) {
 }
 
 function getWizardHtml() {
+    return `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -433,121 +434,124 @@ function getWizardHtml() {
     </div>
 
     <script>
-        let detectedAccountId = '';
+        let detectedAccountId = "";
 
         function updateTargetUI() {
-            const type = document.getElementById('targetType').value;
-            const nameInput = document.getElementById('workerName');
-            const label = document.getElementById('nameLabel');
-            if (type === 'master') {
-                label.innerText = 'نام ورکر پنل اصلی';
-                nameInput.value = 'mehr';
+            const type = document.getElementById("targetType").value;
+            const nameInput = document.getElementById("workerName");
+            const label = document.getElementById("nameLabel");
+            if (type === "master") {
+                label.innerText = "نام ورکر پنل اصلی";
+                nameInput.value = "mehr";
             } else {
-                label.innerText = 'نام ورکر نود فرعی';
-                nameInput.value = 'node-edge-2';
+                label.innerText = "نام ورکر نود فرعی";
+                nameInput.value = "node-edge-2";
             }
         }
 
         async function detectAccount() {
-            const token = document.getElementById('apiToken').value.trim();
-            const badge = document.getElementById('accountBadge');
+            const token = document.getElementById("apiToken").value.trim();
+            const badge = document.getElementById("accountBadge");
             if (token.length < 30) {
-                badge.style.display = 'none';
+                badge.style.display = "none";
                 return;
             }
 
-            badge.style.display = 'block';
-            badge.style.color = 'var(--primary)';
-            badge.innerText = '⏳ در حال شناسایی اکانت...';
+            badge.style.display = "block";
+            badge.style.color = "var(--primary)";
+            badge.innerText = "⏳ در حال شناسایی اکانت...";
 
             try {
-                const res = await fetch('/api/get-account', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const res = await fetch("/api/get-account", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ apiToken: token })
                 });
                 const data = await res.json();
                 if (data.success) {
                     detectedAccountId = data.data.accountId;
-                    badge.style.color = 'var(--success)';
-                    badge.innerText = '✓ اکانت شناسایی شد: ' + data.data.accountName;
+                    badge.style.color = "var(--success)";
+                    badge.innerText = "✓ اکانت شناسایی شد: " + data.data.accountName;
                 } else {
-                    badge.style.color = 'var(--danger)';
-                    badge.innerText = '✗ خطا: ' + data.message;
+                    badge.style.color = "var(--danger)";
+                    badge.innerText = "✗ خطا: " + data.message;
                 }
             } catch (err) {
-                badge.style.color = 'var(--danger)';
-                badge.innerText = '✗ خطا در ارتباط با کلادفلر';
+                badge.style.color = "var(--danger)";
+                badge.innerText = "✗ خطا در ارتباط با کلادفلر";
             }
         }
 
         async function startDeploy() {
-            const apiToken = document.getElementById('apiToken').value.trim();
-            const targetType = document.getElementById('targetType').value;
-            const workerName = document.getElementById('workerName').value.trim();
-            const btn = document.getElementById('deployBtn');
-            const status = document.getElementById('statusMsg');
-            const resultBox = document.getElementById('resultBox');
+            const apiToken = document.getElementById("apiToken").value.trim();
+            const targetType = document.getElementById("targetType").value;
+            const workerName = document.getElementById("workerName").value.trim();
+            const btn = document.getElementById("deployBtn");
+            const status = document.getElementById("statusMsg");
+            const resultBox = document.getElementById("resultBox");
 
-                status.className = 'status error';
-                status.innerText = 'لطفاً توکن و نام ورکر را وارد کنید.';
+            if (!apiToken || !workerName) {
+                status.className = "status error";
+                status.innerText = "لطفاً توکن و نام ورکر را وارد کنید.";
                 return;
             }
 
+            if (!detectedAccountId) {
                 await detectAccount();
-                    status.className = 'status error';
-                    status.innerText = 'شناسایی اکانت ناموفق بود. توکن را بررسی کنید.';
+                if (!detectedAccountId) {
+                    status.className = "status error";
+                    status.innerText = "شناسایی اکانت ناموفق بود. توکن را بررسی کنید.";
                     return;
                 }
             }
 
             btn.disabled = true;
-            btn.innerText = '⏳ در حال ساخت و دیپلوی روی کلادفلر...';
-            status.className = 'status';
-            status.innerText = '';
-            resultBox.style.display = 'none';
+            btn.innerText = "⏳ در حال ساخت و دیپلوی روی کلادفلر...";
+            status.className = "status";
+            status.innerText = "";
+            resultBox.style.display = "none";
 
             try {
-                const res = await fetch('/api/deploy', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const res = await fetch("/api/deploy", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ apiToken, accountId: detectedAccountId, targetType, workerName })
                 });
                 const data = await res.json();
 
                 if (data.success) {
-                    status.className = 'status success';
-                    status.innerText = 'استقرار با موفقیت انجام شد!';
-                    document.getElementById('resUrl').innerText = data.data.url;
+                    status.className = "status success";
+                    status.innerText = "استقرار با موفقیت انجام شد!";
+                    document.getElementById("resUrl").innerText = data.data.url;
                     
-                    const keyBox = document.getElementById('keyBox');
-                    const resultDesc = document.getElementById('resultDesc');
-                    if (data.data.type === 'edge') {
-                        keyBox.style.display = 'block';
-                        document.getElementById('resKey').innerText = data.data.apiKey;
-                        resultDesc.innerText = '✅ نود فرعی آماده شد. آن را در پنل اصلی ثبت کنید.';
+                    const keyBox = document.getElementById("keyBox");
+                    const resultDesc = document.getElementById("resultDesc");
+                    if (data.data.type === "edge") {
+                        keyBox.style.display = "block";
+                        document.getElementById("resKey").innerText = data.data.apiKey;
+                        resultDesc.innerText = "✅ نود فرعی آماده شد. آن را در پنل اصلی ثبت کنید.";
                     } else {
-                        keyBox.style.display = 'none';
+                        keyBox.style.display = "none";
                         resultDesc.innerHTML = '✅ پنل اصلی مستقر شد.<br><a href="' + data.data.url + '" target="_blank" class="open-dash-btn">🚀 ورود به داشبورد پنل مهر</a>';
                     }
-                    resultBox.style.display = 'block';
+                    resultBox.style.display = "block";
                 } else {
-                    status.className = 'status error';
-                    status.innerText = 'خطا: ' + data.message;
+                    status.className = "status error";
+                    status.innerText = "خطا: " + data.message;
                 }
             } catch (err) {
-                status.className = 'status error';
-                status.innerText = 'خطا: ' + err.message;
+                status.className = "status error";
+                status.innerText = "خطا: " + err.message;
             } finally {
                 btn.disabled = false;
-                btn.innerText = '⚡ شروع استقرار خودکار';
+                btn.innerText = "⚡ شروع استقرار خودکار";
             }
         }
 
         function copyText(elementId) {
             const text = document.getElementById(elementId).innerText;
             navigator.clipboard.writeText(text).then(() => {
-                alert('کپی شد!');
+                alert("کپی شد!");
             });
         }
     </script>
