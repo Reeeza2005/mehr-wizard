@@ -148,7 +148,7 @@ async function deployMasterPanel(token, accountId, panelName) {
         });
     } catch(e) {}
 
-    // دریافت آخرین سورس کد پنل و داشبورد از مخزن اصلی گیت‌‌هاب
+    // دریافت آخرین سورس کد پنل و داشبورد از مخزن اصلی گیت‌هاب
     const masterWorkerSource = await fetchFromGithub("_worker.js");
     const masterHtmlSource = await fetchFromGithub("dashboard.html");
 
@@ -164,7 +164,6 @@ async function deployMasterPanel(token, accountId, panelName) {
 
     form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
     
-    // تبدیل ایمن HTML به ماژول استاندارد JS و پچ کردن ایمپورت داشبورد
     const dashboardJs = `export default ${JSON.stringify(masterHtmlSource)};`;
     const patchedWorker = masterWorkerSource.replace(/["']\.\/dashboard\.html["']/g, '"./dashboard.js"');
     
@@ -637,4 +636,5 @@ function getWizardHtml() {
         }
     </script>
 </body>
-</html>
+</html>`;
+}
