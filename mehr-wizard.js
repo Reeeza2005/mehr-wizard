@@ -1,4 +1,4 @@
-const WIZARD_VERSION = "2.1.0";
+const WIZARD_VERSION = "2.0.1";
 // =============================================================================
 // Mehr Unified Deployment Wizard (Master & Edge Nodes Factory)
 // =============================================================================
@@ -272,7 +272,7 @@ function getWizardHtml() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mehr Setup Wizard v2.1.0</title>
+    <title>Mehr Setup Wizard v2.0.1</title>
     <style>
         :root {
             --bg: #090d16;
@@ -417,7 +417,7 @@ function getWizardHtml() {
 <body>
     <div class="card">
         <span class="badge">Mehr Deployment Hub</span>
-        <h1>ویزارد جامع راه‌اندازی کلاستر مهر <span style="font-size: 13px; background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 9999px; margin-right: 8px; vertical-align: middle;">v2.1.0</span></h1>
+        <h1>ویزارد جامع راه‌اندازی کلاستر مهر <span style="font-size: 13px; background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 9999px; margin-right: 8px; vertical-align: middle;">v2.0.1</span></h1>
         <p>پنل اصلی یا نودهای فرعی را با یک کلیک و بدون نیاز به ترمینال دیپلوی یا به‌روزرسانی کنید.</p>
 
         <div class="token-helper">
