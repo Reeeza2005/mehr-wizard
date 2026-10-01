@@ -1,4 +1,4 @@
-const WIZARD_VERSION = "2.0.1";
+const WIZARD_VERSION = "2.0.2";
 // =============================================================================
 // Mehr Unified Deployment Wizard (Master & Edge Nodes Factory)
 // =============================================================================
@@ -77,11 +77,38 @@ async function handleDeploy(request) {
 }
 
 // -----------------------------------------------------------------------------
-// 1. نصب و استقرار نود فرعی (Edge Ghost Node)
+// 1. نصب و استقرار نود فرعی (Edge Ghost Node) - نسخه کامل و خودکار
 // -----------------------------------------------------------------------------
 async function deployEdgeNode(token, accountId, nodeName) {
     const nodeApiKey = "mehr_sec_" + crypto.randomUUID().replace(/-/g, "") + "_" + Math.random().toString(36).substring(2, 10);
     const agentSource = await fetchFromGithub("mehr-agent.js");
+
+    const d1Id = await getOrCreateD1(accountId, token, "super_panel_db");
+    let masterUrl = "https://mehr.v5twycq1o.workers.dev";
+    let clusterSecret = "mehr_cluster_secret_2026";
+
+    try {
+        const confRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${d1Id}/query`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ sql: "SELECT value FROM kv_store WHERE key = 'sys_config';" })
+        });
+        const confData = await confRes.json();
+        const confRaw = confData?.result?.[0]?.results?.[0]?.value;
+        if (confRaw) {
+            const parsed = JSON.parse(confRaw);
+            if (parsed.clusterKey) clusterSecret = parsed.clusterKey;
+            if (parsed.cfWorkerName) {
+                const subRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const subData = await subRes.json();
+                if (subData?.result?.subdomain) {
+                    masterUrl = `https://${parsed.cfWorkerName}.${subData.result.subdomain}.workers.dev`;
+                }
+            }
+        }
+    } catch (e) {}
 
     const form = new FormData();
     const metadata = {
@@ -89,7 +116,10 @@ async function deployEdgeNode(token, accountId, nodeName) {
         compatibility_date: new Date().toISOString().split("T")[0],
         compatibility_flags: ["nodejs_compat"],
         bindings: [
-            { type: "plain_text", name: "API_KEY", text: nodeApiKey }
+            { type: "plain_text", name: "PANEL_URL", text: masterUrl },
+            { type: "plain_text", name: "CLUSTER_KEY", text: clusterSecret },
+            { type: "plain_text", name: "API_KEY", text: nodeApiKey },
+            { type: "plain_text", name: "NODE_ID", text: nodeName }
         ]
     };
 
@@ -110,7 +140,18 @@ async function deployEdgeNode(token, accountId, nodeName) {
     await enableWorkerSubdomain(accountId, token, nodeName);
     const finalUrl = await getWorkerUrl(accountId, token, nodeName, false);
 
-    return jsonRes(true, "نود فرعی با موفقیت دیپلوی شد.", {
+    try {
+        const cleanHost = finalUrl.replace(/^https?:\/\//, "").split("/")[0];
+        const insertSql = `INSERT OR REPLACE INTO nodes (id, name, url, address, api_key, status, created_at, last_seen) 
+                           VALUES ('${nodeName}', '${nodeName}', '${finalUrl}', '${cleanHost}', '${nodeApiKey}', 'active', unixepoch(), unixepoch());`;
+        await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${d1Id}/query`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ sql: insertSql })
+        });
+    } catch (dbErr) {}
+
+    return jsonRes(true, "نود فرعی با موفقیت دیپلوی و در پنل ثبت شد.", {
         type: "edge",
         url: finalUrl,
         apiKey: nodeApiKey,
@@ -124,22 +165,23 @@ async function deployEdgeNode(token, accountId, nodeName) {
 async function deployMasterPanel(token, accountId, panelName) {
     const d1Id = await getOrCreateD1(accountId, token, "super_panel_db");
 
-    // تزریق خودکار مشخصات کلودفلر به دیتابیس
     try {
         const initSql = `
             CREATE TABLE IF NOT EXISTS kv_store (key TEXT PRIMARY KEY, value TEXT);
+            CREATE TABLE IF NOT EXISTS nodes (id TEXT PRIMARY KEY, name TEXT, url TEXT, address TEXT, api_key TEXT, status TEXT DEFAULT 'active', country TEXT, daily_requests INTEGER DEFAULT 0, last_reset_date TEXT, last_seen INTEGER DEFAULT 0, created_at INTEGER DEFAULT (unixepoch()));
+            CREATE TABLE IF NOT EXISTS node_traffic (user_uuid TEXT, node_id TEXT, bytes_uploaded INTEGER DEFAULT 0, bytes_downloaded INTEGER DEFAULT 0, last_update INTEGER DEFAULT 0, PRIMARY KEY(user_uuid, node_id));
             INSERT INTO kv_store (key, value) VALUES (
-                \x27sys_config\x27,
+                'sys_config',
                 json_object(
-                    \x27cfAccountId\x27, \x27${accountId}\x27,
-                    \x27cfWorkerName\x27, \x27${panelName}\x27,
-                    \x27cfApiToken\x27, \x27${token}\x27,
-                    \x27name\x27, \x27مِهر\x27,
-                    \x27apiRoute\x27, \x27sync\x27,
-                    \x27clusterKey\x27, \x27mehr_cluster_secret_2026\x27
+                    'cfAccountId', '${accountId}',
+                    'cfWorkerName', '${panelName}',
+                    'cfApiToken', '${token}',
+                    'name', 'مِهر',
+                    'apiRoute', 'sync',
+                    'clusterKey', 'mehr_cluster_secret_2026'
                 )
             ) ON CONFLICT(key) DO UPDATE SET
-                value = json_set(value, \x27$.cfAccountId\x27, \x27${accountId}\x27, \x27$.cfWorkerName\x27, \x27${panelName}\x27, \x27$.cfApiToken\x27, \x27${token}\x27);
+                value = json_set(value, '$.cfAccountId', '${accountId}', '$.cfWorkerName', '${panelName}', '$.cfApiToken', '${token}');
         `;
         await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${d1Id}/query`, {
             method: "POST",
@@ -148,7 +190,6 @@ async function deployMasterPanel(token, accountId, panelName) {
         });
     } catch(e) {}
 
-    // دریافت آخرین سورس کد پنل و داشبورد از مخزن اصلی گیت‌هاب
     const masterWorkerSource = await fetchFromGithub("_worker.js");
     const masterHtmlSource = await fetchFromGithub("dashboard.html");
 
@@ -609,7 +650,7 @@ function getWizardHtml(version = WIZARD_VERSION) {
                     if (data.data.type === "edge") {
                         keyBox.style.display = "block";
                         document.getElementById("resKey").innerText = data.data.apiKey;
-                        resultDesc.innerText = "✅ نود فرعی آماده شد. آن را در پنل اصلی ثبت کنید.";
+                        resultDesc.innerText = "✅ نود فرعی آماده و خودکار در پنل ثبت شد.";
                     } else {
                         keyBox.style.display = "none";
                         resultDesc.innerText = "✅ پنل اصلی مهر با موفقیت به‌روزرسانی شد. لینک بالا را باز کنید.";
